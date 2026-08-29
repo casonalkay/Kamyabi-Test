@@ -47,6 +47,7 @@ def scrape(session=None):
                 application_end=dates[1] if len(dates)>=2 else None,
                 published_date=pub,
                 official_url=page_url,
+                source_page_url=page_url,
                 notification_url=href,
                 source="India Post",
                 record_type="recruitment",

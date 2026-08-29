@@ -26,6 +26,7 @@ class Job:
     published_date: Optional[str] = None
     official_url: Optional[str] = None
     notification_url: Optional[str] = None
+    source_page_url: Optional[str] = None
     application_url: Optional[str] = None
     source: Optional[str] = None
     source_advertisement_no: Optional[str] = None
@@ -166,6 +167,30 @@ def extract_salary(text):
         return None
     m = re.search(r"(?:pay scale|pay level|salary|remuneration|emoluments?)\s*[:\-]?\s*(.{5,250})", text, re.I)
     return clean_text(m.group(1))[:250] if m else None
+
+
+GENERIC_TITLES = {
+    "recruitment exams", "recruitment", "vacancies", "current openings",
+    "government jobs", "jobs", "latest jobs"
+}
+
+def is_publishable(job):
+    """Hard safety gate before a record can enter current jobs."""
+    title = clean_text(job.get("title") or "")
+    notification = clean_text(job.get("notification_url") or "")
+    official = clean_text(job.get("official_url") or "")
+    record_type = job.get("record_type")
+    if record_type not in ("vacancy", "recruitment"):
+        return False, "invalid_record_type"
+    if not title or title.lower() in GENERIC_TITLES:
+        return False, "generic_title"
+    if not notification or notification == official:
+        return False, "missing_direct_notification"
+    if not (job.get("application_start") or job.get("application_end")):
+        return False, "missing_application_dates"
+    if job.get("status") == "unknown":
+        return False, "unknown_status"
+    return True, None
 
 def quality_score(job):
     required = [

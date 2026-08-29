@@ -7,6 +7,7 @@ import requests
 from pipeline.store import load_json, write_json, merge_jobs
 from pipeline.change_detector import content_hash
 from scrapers import upsc, ssc, ibps, sbi, indiapost, employment_news
+from scrapers.base import is_publishable
 
 ROOT = Path(__file__).resolve().parent
 DATA = ROOT / "data"
@@ -40,6 +41,7 @@ def run():
     current_path = DATA / "current/jobs.json"
     existing = load_json(current_path, [])
     all_scraped = []
+    review = []
     source_stats = []
 
     for source_id in enabled:
@@ -53,6 +55,12 @@ def run():
             for j in jobs:
                 if j.get("record_type") not in ("vacancy", "recruitment"):
                     rejected += 1
+                    review.append({"source": source_id, "job": j, "reason": "invalid_record_type"})
+                    continue
+                ok, reason = is_publishable(j)
+                if not ok:
+                    rejected += 1
+                    review.append({"source": source_id, "job": j, "reason": reason})
                     continue
                 j["content_hash"] = content_hash(j)
                 valid.append(j)
@@ -73,12 +81,14 @@ def run():
 
     write_json(current_path, merged)
     write_json(DATA / "history" / f"{now[:10]}.json", merged)
+    write_json(DATA / "review" / f"{now[:10]}.json", review)
     write_json(DATA / "last_run.json", {
         "run_at": now,
         "total_jobs_scraped": len(all_scraped),
         "total_jobs_current": len(merged),
         "changes": changes,
         "sources": source_stats,
+        "review_records": len(review),
         "website_integration": False,
         "data_policy": "Only vacancy/recruitment records are stored; missing fields remain null."
     })

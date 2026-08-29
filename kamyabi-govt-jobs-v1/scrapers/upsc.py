@@ -50,6 +50,7 @@ def scrape(session=None):
             application_start=dates[0] if len(dates)>=1 else None,
             application_end=dates[1] if len(dates)>=2 else None,
             official_url=used,
+            source_page_url=used,
             notification_url=href,
             source="UPSC",
             source_advertisement_no=adv[:200],

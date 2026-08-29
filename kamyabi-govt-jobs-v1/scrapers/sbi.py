@@ -26,7 +26,7 @@ def scrape(session=None):
     for a in s.find_all("a", href=True):
         link_text = clean_text(a.get_text(" ", strip=True))
         href = absolute(URL, a["href"])
-        if "download advertisement" not in link_text.lower() or not is_pdf(href):
+        if "download advertisement" not in link_text.lower():
             continue
         ctx = _context(a)
         record_type = classify_record(ctx[:500], ctx)
@@ -86,6 +86,7 @@ def scrape(session=None):
             application_start=app_start,
             application_end=app_end,
             official_url=URL,
+            source_page_url=URL,
             notification_url=href,
             application_url=application_url,
             source="SBI",

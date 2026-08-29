@@ -41,3 +41,15 @@ The official government notification remains the source of truth.
 The workflow runs daily at 05:30 IST and can be manually triggered from Actions. Because the repository is currently nested under `kamyabi-govt-jobs-v1/`, the workflow explicitly runs Python from that directory.
 
 Before any future website integration, inspect the actual records and source-level QA results for several runs.
+
+
+## V1.2 data-safety gates
+
+A scraped item is not allowed into `data/current/jobs.json` unless it has:
+- a specific non-generic title,
+- a direct notification target different from the source landing page,
+- at least one application date,
+- a known open/closed status,
+- a `vacancy` or `recruitment` record type.
+
+Rejected items are written to `data/review/YYYY-MM-DD.json` for inspection rather than being published.

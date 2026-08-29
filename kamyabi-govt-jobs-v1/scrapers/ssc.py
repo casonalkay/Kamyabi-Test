@@ -52,6 +52,7 @@ def scrape(session=None):
             application_start=app_start,
             application_end=app_end,
             official_url=URL,
+            source_page_url=URL,
             notification_url=href,
             source="SSC",
             source_advertisement_no=adv,
