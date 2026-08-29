@@ -1,1 +1,39 @@
-[]
+[
+  {
+    "job_id": "f814a7cf8f798b793997",
+    "organization": "State Bank of India",
+    "title": "Hindi",
+    "department": null,
+    "job_type": "Public Sector Banking",
+    "location": null,
+    "vacancies": null,
+    "qualification": "qualification experience) The General Manager, State Bank of India, Central Recruitment & Promotion Department, Corporate Centre, Mumbai. DECLARATION/ UNDERTAKING I___________________________________________son/wife/daughter of_____________________________________________have applied for the post of",
+    "age_limit": null,
+    "salary": null,
+    "application_start": "2025-09-11",
+    "application_end": "2025-09-11",
+    "exam_date": null,
+    "published_date": null,
+    "official_url": "https://sbi.bank.in/web/careers/current-openings",
+    "notification_url": "https://sbi.bank.in/documents/77530/52947104/adv+hindi_credit_analyst_SCO_2025_26_11.pdf/0160dc50-ecfc-352c-032a-362da0e2b53f?t=1758369691074",
+    "application_url": null,
+    "source": "SBI",
+    "source_advertisement_no": null,
+    "record_type": "recruitment",
+    "status": "closed",
+    "first_seen": "2026-08-29T12:28:51+00:00",
+    "last_seen": "2026-08-29T12:28:51+00:00",
+    "last_updated": "2026-08-29T12:28:51+00:00",
+    "scrape_date": "2026-08-29T12:28:51+00:00",
+    "content_hash": "657fb6a06e22478285118a60eab3b123fc6f6cfda3bf1ab35cda7637b112fa03",
+    "data_quality_score": 80,
+    "missing_fields": [
+      "vacancies",
+      "age_limit",
+      "salary",
+      "application_url",
+      "published_date",
+      "location"
+    ]
+  }
+]

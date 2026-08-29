@@ -1,1 +1,55 @@
-{}
+{
+  "run_at": "2026-08-29T12:28:51+00:00",
+  "total_jobs_scraped": 13,
+  "total_jobs_published_this_run": 1,
+  "total_jobs_current": 1,
+  "review_records": 12,
+  "changes": [
+    {
+      "job_id": "f814a7cf8f798b793997",
+      "title": "Hindi",
+      "type": "new",
+      "changes": []
+    }
+  ],
+  "sources": [
+    {
+      "source": "upsc",
+      "status": "no_data",
+      "jobs": 0,
+      "rejected": 0
+    },
+    {
+      "source": "ssc",
+      "status": "no_data",
+      "jobs": 0,
+      "rejected": 0
+    },
+    {
+      "source": "ibps",
+      "status": "no_data",
+      "jobs": 0,
+      "rejected": 0
+    },
+    {
+      "source": "sbi",
+      "status": "ok",
+      "jobs": 13,
+      "rejected": 0
+    },
+    {
+      "source": "indiapost",
+      "status": "no_data",
+      "jobs": 0,
+      "rejected": 0
+    },
+    {
+      "source": "employment_news",
+      "status": "no_data",
+      "jobs": 0,
+      "rejected": 0
+    }
+  ],
+  "website_integration": false,
+  "data_policy": "Only validated vacancy/recruitment records with a direct notification URL are published; uncertain records go to review; missing fields remain null."
+}
