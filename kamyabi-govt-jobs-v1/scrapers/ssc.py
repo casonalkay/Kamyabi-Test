@@ -1,7 +1,7 @@
 from .base import *
 from pipeline.pdf_extract import pdf_text
 from pipeline.extract import application_window, vacancies, labeled, quality
-from pipeline.classify import is_recruitment, is_current
+from pipeline.classify import is_recruitment
 
 URL="https://ssc.gov.in/"
 BAD=("result","answer key","admit card","allocation","marks","score","final result","option-cum-response")

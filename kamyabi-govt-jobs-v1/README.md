@@ -1,25 +1,31 @@
-# Kamyabi Government Jobs Scraper — V1.5 TEST
+# Kamyabi Government Jobs Scraper — V1.6 TEST
 
-This is a test-only scraper. `website_integration` remains false. Nothing deploys to or modifies Kamyabi.in.
+**Test only.** No deployment, API push, database write, or website integration with Kamyabi.in.
 
-## V1.5 quality-first rules
+## V1.6 architecture
 
-1. Discover candidate recruitment notices.
-2. Reject result/selection/interview/admit-card/corrigendum documents.
-3. Reject language-only titles such as Hindi/English.
-4. Parse the actual job title from the notification PDF when possible.
-5. Deduplicate English/Hindi versions using advertisement number / normalized identity.
-6. Require a direct notification URL.
-7. Require a valid application end date and `status=open` for publication.
-8. Require quality score >= 75.
-9. Expired jobs are removed from `data/current/jobs.json` but remain in dated history.
-10. Uncertain candidates go to `data/review/YYYY-MM-DD.json`.
-11. Missing fields are never guessed.
+**Discover broadly -> Extract deeply -> Deduplicate -> Validate -> Publish**
 
-## Run
-```bash
-pip install -r requirements.txt
-pytest -q
-python main.py
-python qa.py
-```
+### Data layers
+
+- `data/discovered/YYYY-MM-DD.json` — every usable candidate discovered by source adapters.
+- `data/review/YYYY-MM-DD.json` — candidates that fail publication validation.
+- `data/current/jobs.json` — only current/open, validated records.
+- `data/history/YYYY-MM-DD.json` — daily current snapshot.
+- `data/last_run.json` — source health and run statistics.
+
+### Publication policy
+
+A job must:
+- be a genuine recruitment/vacancy record;
+- have a direct notification URL;
+- have a real job title;
+- have a valid current application end date;
+- pass discovery and publication score thresholds;
+- not be a result/selection/interview/admit-card/corrigendum notice.
+
+Missing fields are never fabricated.
+
+### GitHub
+
+The workflow runs unit tests before the scraper, then QA, then commits only test-repository data.
