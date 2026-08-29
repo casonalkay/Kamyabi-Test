@@ -13,6 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
+    defaults:
+      run:
+        working-directory: kamyabi-govt-jobs-v1
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,6 +28,7 @@ jobs:
         with:
           python-version: "3.12"
           cache: "pip"
+          cache-dependency-path: kamyabi-govt-jobs-v1/requirements.txt
 
       - name: Install dependencies
         run: pip install -r requirements.txt
@@ -31,10 +36,14 @@ jobs:
       - name: Run scraper
         run: python main.py
 
+      - name: Run QA
+        run: python qa.py
+
       - name: Commit data
+        working-directory: .
         run: |
           git config user.name "kamyabi-bot"
           git config user.email "kamyabi-bot@users.noreply.github.com"
-          git add data/ logs/
+          git add kamyabi-govt-jobs-v1/data/ kamyabi-govt-jobs-v1/logs/
           git diff --cached --quiet || git commit -m "data: daily government jobs update"
           git push
