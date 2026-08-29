@@ -1,8 +1,20 @@
-# Kamyabi Government Jobs Scraper — V1
+# Kamyabi Government Jobs Scraper — V1.1 TEST ONLY
 
-TEST-ONLY automated collection of government-job vacancy/notification data from official portals. This repository does NOT connect to or modify Kamyabi.in.
+This repository is a **test-only** data collector for Kamyabi. It does **not** connect to, modify, deploy to, or call `kamyabi.in`.
 
-## V1 sources
+## What changed in V1.1
+
+- Added `record_type` validation so results, selection lists, interview schedules, admit cards and similar notices are not treated as vacancies.
+- SBI scraper now starts from actual **DOWNLOAD ADVERTISEMENT** records and requires recruitment/apply context instead of scraping every PDF on the page.
+- Added application-date extraction from SBI's recruitment block and notification PDF.
+- Added vacancy/qualification/age/salary extraction where the PDF text supports it.
+- SSC, India Post, IBPS and Employment News parsers were tightened around recruitment records.
+- IBPS has a narrowly scoped certificate-chain fallback; it does not disable TLS globally.
+- UPSC has an alternate official vacancy-circular endpoint if the recruitment-advertisement page blocks the runner.
+- Legacy V1 records without a valid `record_type` are removed from the current dataset on the next run.
+- Added QA and tests to the GitHub Action before scraping.
+
+## Current sources
 
 - UPSC
 - SSC
@@ -11,104 +23,21 @@ TEST-ONLY automated collection of government-job vacancy/notification data from 
 - India Post
 - Employment News
 
-The scraper is intentionally source-adapter based. Each portal has its own scraper under `scrapers/`.
+## Data policy
 
-## Data flow
-
-Official portal → scraper → PDF/text extraction → normalization → deduplication/change detection → `data/current/jobs.json` → daily history snapshot → Kamyabi.in
-
-## Run locally
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python main.py
-```
-
-Windows PowerShell:
-
-```powershell
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-python main.py
-```
+Only `vacancy` and `recruitment` records enter `data/current/jobs.json`.
+Missing values are kept as `null`; the scraper does not invent vacancy counts, qualifications, dates or salary information.
+The official government notification remains the source of truth.
 
 ## Output
 
-`data/current/jobs.json` is the primary dataset.
-
-`data/history/YYYY-MM-DD.json` is a daily snapshot.
-
-`data/last_run.json` contains source health and detected changes.
-
-Every job includes:
-
-- `job_id`
-- organization
-- title
-- vacancies
-- qualification
-- age limit
-- salary
-- application dates
-- official URL
-- notification URL
-- source
-- first seen
-- last seen
-- last updated
-- scrape date
-- content hash
-
-## Important V1 limitation
-
-Government portals frequently change HTML, use JavaScript, or publish information only inside PDFs. V1 therefore uses a combination of HTML link discovery and PDF text extraction. Some fields may remain `null` until a source-specific parser is strengthened.
-
-Do not treat a scraped record as authoritative unless the user follows the linked official notification. The official government notification remains the source of truth.
-
-## TEST-ONLY SAFETY
-
-This repository is intentionally isolated from `kamyabi.in`. No website code, API, database, DNS, deployment, or production credentials are used. The workflow only writes data inside this repository.
+- `data/current/jobs.json` — current normalized vacancy dataset
+- `data/history/YYYY-MM-DD.json` — daily snapshot
+- `data/last_run.json` — source health, counts and detected changes
+- `logs/scraper.log` — execution log
 
 ## GitHub Actions
 
-`.github/workflows/daily_scraper.yml` runs once per day at 05:30 IST and commits changed data back to the repository.
+The workflow runs daily at 05:30 IST and can be manually triggered from Actions. Because the repository is currently nested under `kamyabi-govt-jobs-v1/`, the workflow explicitly runs Python from that directory.
 
-It can also be started manually from the GitHub Actions UI.
-
-## Kamyabi integration
-
-For a first version, Kamyabi can read:
-
-```text
-https://raw.githubusercontent.com/<GITHUB_USER>/kamyabi-govt-jobs/main/data/current/jobs.json
-```
-
-Later, move the public delivery layer to a database/API if traffic grows.
-
-## Recommended next iterations
-
-1. Add RRB regional portals.
-2. Add DRDO.
-3. Add state PSCs.
-4. Improve PDF field extraction.
-5. Add OCR for scanned PDFs.
-6. Add source health checks and alerting.
-7. Add job-level change history.
-8. Add an API/cache layer for Kamyabi.
-
-
-## Test-first workflow
-
-1. Upload this ZIP into a separate GitHub test repository/folder.
-2. Run the workflow manually with `workflow_dispatch`.
-3. Inspect `data/current/jobs.json` and `data/last_run.json`.
-4. Review source-level errors before using any data on a website.
-5. Do not connect this repository to Kamyabi.in until extraction quality is approved.
-
-## Safety rule
-
-The scraper must not fabricate missing values. Unknown fields should remain `null`.
-The linked official government notification remains the source of truth.
+Before any future website integration, inspect the actual records and source-level QA results for several runs.

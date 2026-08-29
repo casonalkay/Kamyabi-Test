@@ -21,22 +21,21 @@ SCRAPERS = {
     "employment_news": employment_news.scrape,
 }
 
+
 def setup_logging():
     LOGS.mkdir(exist_ok=True)
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(message)s",
-        handlers=[
-            logging.FileHandler(LOGS / "scraper.log", encoding="utf-8"),
-            logging.StreamHandler()
-        ],
+        handlers=[logging.FileHandler(LOGS / "scraper.log", encoding="utf-8"), logging.StreamHandler()],
     )
+
 
 def run():
     setup_logging()
     now = datetime.now().astimezone().isoformat(timespec="seconds")
     session = requests.Session()
-    config = load_json(ROOT / "config/sources.json", {"sources":[]})
+    config = load_json(ROOT / "config/sources.json", {"sources": []})
     enabled = [x["id"] for x in config["sources"] if x.get("enabled")]
     current_path = DATA / "current/jobs.json"
     existing = load_json(current_path, [])
@@ -49,19 +48,28 @@ def run():
             continue
         try:
             jobs = fn(session)
+            valid = []
+            rejected = 0
             for j in jobs:
+                if j.get("record_type") not in ("vacancy", "recruitment"):
+                    rejected += 1
+                    continue
                 j["content_hash"] = content_hash(j)
-            all_scraped.extend(jobs)
-            source_stats.append({"source":source_id, "status":"ok", "jobs":len(jobs)})
-            logging.info("%s: %d jobs", source_id, len(jobs))
+                valid.append(j)
+            all_scraped.extend(valid)
+            source_stats.append({"source": source_id, "status": "ok", "jobs": len(valid), "rejected": rejected})
+            logging.info("%s: %d valid jobs (%d rejected)", source_id, len(valid), rejected)
         except Exception as e:
             logging.exception("%s failed", source_id)
-            source_stats.append({"source":source_id, "status":"error", "error":str(e)})
+            source_stats.append({"source": source_id, "status": "error", "jobs": 0, "error": str(e)})
 
     merged, changes = merge_jobs(existing, all_scraped, now)
-
-    # Keep stable, deterministic ordering.
-    merged.sort(key=lambda x: (x.get("status") != "open", x.get("application_end") or "9999-12-31", x.get("organization") or "", x.get("title") or ""))
+    merged.sort(key=lambda x: (
+        x.get("status") != "open",
+        x.get("application_end") or "9999-12-31",
+        x.get("organization") or "",
+        x.get("title") or ""
+    ))
 
     write_json(current_path, merged)
     write_json(DATA / "history" / f"{now[:10]}.json", merged)
@@ -70,7 +78,9 @@ def run():
         "total_jobs_scraped": len(all_scraped),
         "total_jobs_current": len(merged),
         "changes": changes,
-        "sources": source_stats
+        "sources": source_stats,
+        "website_integration": False,
+        "data_policy": "Only vacancy/recruitment records are stored; missing fields remain null."
     })
 
     print(json.dumps({
@@ -80,6 +90,7 @@ def run():
         "changes": len(changes),
         "sources": source_stats
     }, indent=2))
+
 
 if __name__ == "__main__":
     run()

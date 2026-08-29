@@ -1,6 +1,7 @@
 from pathlib import Path
 import json
-from datetime import datetime
+
+ALLOWED_RECORD_TYPES = {"vacancy", "recruitment"}
 
 def load_json(path, default):
     p = Path(path)
@@ -17,10 +18,18 @@ def write_json(path, data):
     p.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 def merge_jobs(existing, scraped, now):
-    by_id = {j["job_id"]: j for j in existing}
+    # V1.1 deliberately drops legacy records that were created before record_type
+    # validation existed. This prevents old result/selection-list records from
+    # leaking into the new vacancy dataset.
+    by_id = {
+        j["job_id"]: j for j in existing
+        if j.get("record_type") in ALLOWED_RECORD_TYPES
+    }
     changes = []
 
     for job in scraped:
+        if job.get("record_type") not in ALLOWED_RECORD_TYPES:
+            continue
         old = by_id.get(job["job_id"])
         if old:
             job["first_seen"] = old.get("first_seen") or now
@@ -32,7 +41,8 @@ def merge_jobs(existing, scraped, now):
                     "changes": [
                         {"field": k, "old": old.get(k), "new": job.get(k)}
                         for k in job.keys()
-                        if old.get(k) != job.get(k) and k not in ("last_seen","last_updated","scrape_date","content_hash")
+                        if old.get(k) != job.get(k)
+                        and k not in ("last_seen","last_updated","scrape_date","content_hash")
                     ]
                 })
         else:
