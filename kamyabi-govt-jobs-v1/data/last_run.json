@@ -1,1 +1,67 @@
-{}
+{
+  "run_at": "2026-08-29T12:48:40+00:00",
+  "total_candidates": 4,
+  "total_jobs_published_this_run": 4,
+  "total_jobs_current": 4,
+  "review_records": 0,
+  "changes": [
+    {
+      "job_id": "84224654265d15025487",
+      "title": "RECRUITMENT OF SPECIALIST CADRE OFFICER ON REGULAR BASIS (Apply Online from 29.08.2026 TO 19.09.2026) ADVERTISEMENT NO: CRPD/SCO/2026-27/15 LAST DATE TO APPLY : 19-09-2026 DOWNLOAD ADVERTISEMENT (  (941 KB) ) (NEW) BIODATA (NEW) UNDERTAKING FORMAT (NEW) APPLY ONLINE (29.08.2026 to 19.09.2026)",
+      "type": "new",
+      "changes": []
+    },
+    {
+      "job_id": "c7f050dc30db26a83953",
+      "title": "DOWNLOAD ADVERTISEMENT (  (941 KB) ) (NEW) BIODATA (NEW) UNDERTAKING FORMAT (NEW) APPLY ONLINE (29.08.2026 to 19.09.2026) (NEW) Apply Now",
+      "type": "new",
+      "changes": []
+    },
+    {
+      "job_id": "06dc76fb141becdc8dac",
+      "title": "RECRUITMENT OF JUNIOR ASSOCIATES (CUSTOMER SUPPORT & SALES) (Apply Online from 11.08.2026 to 31.08.2026) ADVERTISEMENT NO: CRPD/CR/2026-27/17 LAST DATE TO APPLY : 31-08-2026 DOWNLOAD ADVERTISEMENT(  (645 KB) / ) (959 KB) (NEW) APPLY ONLINE (11.08.2026 to 31.08.2026) (NEW) Apply Now",
+      "type": "new",
+      "changes": []
+    },
+    {
+      "job_id": "e58fe11fa72a7dfbff1d",
+      "title": "DOWNLOAD ADVERTISEMENT(  (645 KB) / ) (959 KB) (NEW) APPLY ONLINE (11.08.2026 to 31.08.2026) (NEW) Apply Now",
+      "type": "new",
+      "changes": []
+    }
+  ],
+  "sources": [
+    {
+      "source": "upsc",
+      "status": "no_data",
+      "candidates": 0
+    },
+    {
+      "source": "ssc",
+      "status": "no_data",
+      "candidates": 0
+    },
+    {
+      "source": "ibps",
+      "status": "no_data",
+      "candidates": 0
+    },
+    {
+      "source": "sbi",
+      "status": "ok",
+      "candidates": 4
+    },
+    {
+      "source": "indiapost",
+      "status": "no_data",
+      "candidates": 0
+    },
+    {
+      "source": "employment_news",
+      "status": "no_data",
+      "candidates": 0
+    }
+  ],
+  "website_integration": false,
+  "publish_policy": "OPEN only; direct notification URL; title must be a real recruitment title; quality >= 75; expired jobs removed from current."
+}
