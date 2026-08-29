@@ -1,7 +1,7 @@
 from .base import *
 from pipeline.pdf_extract import pdf_text
 from pipeline.extract import application_window, vacancies, labeled, quality
-from pipeline.classify import is_recruitment
+from pipeline.classify import is_recruitment, is_current
 
 URL="https://ssc.gov.in/"
 BAD=("result","answer key","admit card","allocation","marks","score","final result","option-cum-response")
@@ -21,7 +21,7 @@ def scrape(session=None):
         except Exception: pass
         if pdf and any(x in pdf.lower()[:12000] for x in BAD): continue
         start,end=application_window(pdf+" "+title)
-        if not (start or end or vacancies(pdf)): continue
+        if not (end and is_current(end)): continue
         d=Job(
             job_id=make_job_id("ssc",title,href),
             organization="Staff Selection Commission",

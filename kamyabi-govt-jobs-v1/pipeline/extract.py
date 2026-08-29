@@ -1,107 +1,121 @@
 import re
 from dateutil import parser as dtparser
-from datetime import date
 
-def norm(s):
-    return re.sub(r"\s+", " ", s or "").strip()
+MONTHS = r"(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)"
+DATE_TOKEN = re.compile(
+    rf"\b(?:\d{{1,2}}[./-]\d{{1,2}}[./-]\d{{2,4}}|\d{{1,2}}\s+{MONTHS}\s*,?\s*\d{{4}})\b",
+    re.I,
+)
+
+def norm(s): return re.sub(r"\s+", " ", s or "").strip()
 
 def parse_one_date(s):
     if not s: return None
-    # Only pass a short date-like token to the parser.
-    s = norm(s)[:80]
     try:
-        return dtparser.parse(s, dayfirst=True, fuzzy=False).date().isoformat()
+        return dtparser.parse(norm(s)[:80], dayfirst=True, fuzzy=False).date().isoformat()
     except Exception:
         return None
 
-DATE_TOKEN = re.compile(
-    r"\b(?:\d{1,2}[./-]\d{1,2}[./-]\d{2,4}|\d{1,2}\s+"
-    r"(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|"
-    r"Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|"
-    r"Dec(?:ember)?)\s*,?\s*\d{4})\b", re.I)
-
 def first_date_in(text):
-    if not text: return None
-    m = DATE_TOKEN.search(text)
+    m = DATE_TOKEN.search(text or "")
     return parse_one_date(m.group(0)) if m else None
 
-def dates_in(text):
+def all_dates(text):
     out=[]
     for m in DATE_TOKEN.finditer(text or ""):
         d=parse_one_date(m.group(0))
         if d and d not in out: out.append(d)
     return out
 
-def date_after_label(text, labels, window=220):
+def date_after_label(text, labels, window=240):
     low=(text or "").lower()
     for label in labels:
-        start=0
+        pos=0
         while True:
-            i=low.find(label.lower(), start)
+            i=low.find(label.lower(),pos)
             if i<0: break
-            chunk=text[i:i+window]
-            # Find the first actual date token, not the whole sentence.
-            d=first_date_in(chunk)
+            d=first_date_in(text[i:i+window])
             if d: return d
-            start=i+len(label)
+            pos=i+len(label)
     return None
 
 def application_window(text):
-    start=date_after_label(text, [
-        "opening date", "start date", "commencement of online application",
-        "online application starts", "registration starts", "registration begins",
-        "apply online from", "application start"
+    text=text or ""
+    start=date_after_label(text,[
+        "opening date","start date","commencement of online application",
+        "online application starts","registration starts","registration begins",
+        "apply online from","application start","from "
     ])
-    end=date_after_label(text, [
-        "closing date", "last date to apply", "last date", "end date",
-        "application ends", "registration ends", "registration closes",
-        "apply online till", "application end"
+    end=date_after_label(text,[
+        "closing date","last date to apply","last date","end date",
+        "application ends","registration ends","registration closes",
+        "apply online till","application end","to "
     ])
-    # Handle explicit ranges such as "29.08.2026 TO 19.09.2026"
-    if not start or not end:
-        toks=list(DATE_TOKEN.finditer(text or ""))
-        for a,b in zip(toks, toks[1:]):
-            between=text[a.end():b.start()]
-            if re.search(r"\bto\b|[-–]\s*$|\bthrough\b", between, re.I):
-                da=parse_one_date(a.group(0)); db=parse_one_date(b.group(0))
-                if da and db:
-                    start=start or da
-                    end=end or db
-                    break
+    ds=all_dates(text)
+    # Explicit "from DATE to DATE" or "DATE to DATE".
+    if len(ds)>=2:
+        m=re.search(r"(?:from\s+)?"+DATE_TOKEN.pattern+r"\s+(?:to|till|through|-|–)\s+"+DATE_TOKEN.pattern,text,re.I)
+        if m:
+            pair=DATE_TOKEN.findall(m.group(0))
+            if len(pair)>=2:
+                start=start or parse_one_date(pair[0])
+                end=end or parse_one_date(pair[1])
     return start,end
 
 def vacancies(text):
-    pats=[
+    patterns=[
         r"(?:total\s+)?vacancies?\s*[:\-]?\s*(\d[\d,]*)",
         r"(?:no\.?|number)\s+of\s+(?:vacancies|posts)\s*[:\-]?\s*(\d[\d,]*)",
-        r"(\d[\d,]*)\s+(?:vacancies|posts)\b"
+        r"(\d[\d,]*)\s+(?:vacancies|posts)\b",
+        r"total\s+number\s+of\s+posts\s*[:\-]?\s*(\d[\d,]*)",
     ]
-    for p in pats:
+    for p in patterns:
         m=re.search(p,text or "",re.I)
         if m:
             return int(m.group(1).replace(",",""))
     return None
 
-def labeled(text, labels, window=300):
+def labeled(text, labels, window=500):
     low=(text or "").lower()
     for label in labels:
         i=low.find(label.lower())
         if i>=0:
             chunk=norm(text[i:i+window])
-            # Strip label itself.
-            chunk=re.sub(r"^.*?[:\-]\s*", "", chunk, count=1)
-            return chunk[:1000] or None
+            chunk=re.sub(r"^.*?[:\-]\s*","",chunk,count=1)
+            return chunk[:1200] or None
     return None
 
+def advertisement_no(text):
+    pats=[
+        r"(?:advertisement|advt\.?|notification)\s*(?:no\.?|number)?\s*[:\-]\s*([A-Z0-9][A-Z0-9./_-]{3,})",
+        r"\b([A-Z]{2,8}/[A-Z0-9._/-]{3,})\b"
+    ]
+    for p in pats:
+        m=re.search(p,text or "",re.I)
+        if m: return m.group(1).strip(" .;,")
+    return None
+
+def title_from_pdf(text, fallback=None):
+    if not text: return fallback
+    lines=[norm(x) for x in text.splitlines() if norm(x)]
+    bad=re.compile(r"^(hindi|english|click here|download|advertisement|notification|page \d+)$",re.I)
+    good=re.compile(r"(recruitment|recruit|vacancy|vacancies|probationary officer|junior associate|officer|manager|assistant|engineer|scientist|clerk|constable|teacher|apprentice|specialist|group [abc])",re.I)
+    for line in lines[:120]:
+        if len(line)>8 and len(line)<180 and not bad.match(line) and good.search(line):
+            return line
+    return fallback
+
 def quality(job):
+    # Strict score: identity + current application evidence are mandatory for publishing.
     score=0
-    # Hard identity fields.
-    for k,w in [("organization",10),("title",15),("notification_url",20),("record_type",10)]:
+    for k,w in [("organization",10),("title",20),("notification_url",20),("record_type",10)]:
         if job.get(k): score+=w
-    # Important publishing fields.
-    for k,w in [("application_end",15),("application_start",5),("vacancies",8),
-                ("qualification",5),("age_limit",4),("salary",4),("application_url",4)]:
+    for k,w in [("application_start",8),("application_end",12),("vacancies",8),
+                ("qualification",5),("age_limit",3),("salary",2),("application_url",2)]:
         if job.get(k): score+=w
-    useful=["vacancies","qualification","age_limit","salary","application_start","application_end","application_url","published_date","location"]
-    missing=[k for k in useful if not job.get(k)]
-    return min(score,100), missing
+    missing=[k for k in [
+        "vacancies","qualification","age_limit","salary",
+        "application_start","application_end","application_url",
+        "published_date","location"
+    ] if not job.get(k)]
+    return min(score,100),missing

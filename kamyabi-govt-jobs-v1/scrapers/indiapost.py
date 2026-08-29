@@ -1,7 +1,7 @@
 from .base import *
 from pipeline.pdf_extract import pdf_text
 from pipeline.extract import application_window, vacancies, labeled, quality
-from pipeline.classify import is_recruitment
+from pipeline.classify import is_recruitment, is_current
 
 PAGES=[
     "https://www.indiapost.gov.in/vacancies",
@@ -23,7 +23,7 @@ def scrape(session=None):
             try: pdf=pdf_text(href,session)
             except Exception: pass
             start,end=application_window(pdf+" "+title)
-            if not (start or end or vacancies(pdf)): continue
+            if not (end and is_current(end)): continue
             d=Job(
                 job_id=make_job_id("indiapost",title,href),
                 organization="India Post",
