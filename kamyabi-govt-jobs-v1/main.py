@@ -71,7 +71,7 @@ def run():
             logging.exception("%s failed", source_id)
             source_stats.append({"source": source_id, "status": "error", "jobs": 0, "error": str(e)})
 
-    merged, changes = merge_jobs(existing, all_scraped, now)
+    merged, changes, review = merge_jobs(existing, all_scraped, now)
     merged.sort(key=lambda x: (
         x.get("status") != "open",
         x.get("application_end") or "9999-12-31",
@@ -82,10 +82,12 @@ def run():
     write_json(current_path, merged)
     write_json(DATA / "history" / f"{now[:10]}.json", merged)
     write_json(DATA / "review" / f"{now[:10]}.json", review)
+    write_json(DATA / "review" / f"{now[:10]}.json", review)
     write_json(DATA / "last_run.json", {
         "run_at": now,
         "total_jobs_scraped": len(all_scraped),
         "total_jobs_current": len(merged),
+        "review_records": len(review),
         "changes": changes,
         "sources": source_stats,
         "review_records": len(review),

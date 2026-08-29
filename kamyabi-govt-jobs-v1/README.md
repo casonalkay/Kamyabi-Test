@@ -53,3 +53,14 @@ A scraped item is not allowed into `data/current/jobs.json` unless it has:
 - a `vacancy` or `recruitment` record type.
 
 Rejected items are written to `data/review/YYYY-MM-DD.json` for inspection rather than being published.
+
+
+## V1.3 quality-first changes
+
+- Source-specific discovery for IBPS and SBI.
+- Rejects result/selection/interview/admit-card documents.
+- Requires a direct notification URL before publishing.
+- Weak records are written to `data/review/YYYY-MM-DD.json` rather than `data/current/jobs.json`.
+- Adds vacancy/eligibility/age/salary/date extraction attempts from notification PDFs.
+- Runs automated tests before scraping in GitHub Actions.
+- Still test-only: no Kamyabi.in integration.
