@@ -1,1 +1,87 @@
-{}
+{
+  "run_at": "2026-08-29T11:12:54+00:00",
+  "total_jobs_scraped": 8,
+  "total_jobs_current": 8,
+  "changes": [
+    {
+      "job_id": "6a300e353855f5812f15",
+      "title": "INTERVIEW SCHEDULE (OFFICERS RETIRED UPTO SMGS-V))",
+      "type": "new",
+      "changes": []
+    },
+    {
+      "job_id": "40c920d1174f38286a74",
+      "title": "INTERVIEW SCHEDULE (OFFICERS RETIRED AS TEGS-VI)",
+      "type": "new",
+      "changes": []
+    },
+    {
+      "job_id": "899c2f618219a08dc7b6",
+      "title": "MANAGER (RISK SPECIALIST - MODEL RISK MANAGEMENT) - LIST OF CANDIDATES PROVISIONALLY SELECTED ANNOUNCED",
+      "type": "new",
+      "changes": []
+    },
+    {
+      "job_id": "85bd30df632d92fc3edf",
+      "title": "DEPUTY MANAGER (RISK SPECIALIST -MODEL RISK MANAGEMENT) - LIST OF CANDIDATES PROVISIONALLY SELECTED ANNOUNCED",
+      "type": "new",
+      "changes": []
+    },
+    {
+      "job_id": "bd7eccf70467f5439aba",
+      "title": "INVESTMENT SPECIALIST - LIST OF CANDIDATES PROVISIONALLY SELECTED ANNOUNCED",
+      "type": "new",
+      "changes": []
+    },
+    {
+      "job_id": "43bde263fbb952d3abda",
+      "title": "INVESTMENT OFFICER - LIST OF CANDIDATES PROVISIONALLY SELECTED ANNOUNCED",
+      "type": "new",
+      "changes": []
+    },
+    {
+      "job_id": "3b833ca9efacf6783833",
+      "title": "OFFICERS - LIST OF CANDIDATES PROVISIONALLY SELECTED",
+      "type": "new",
+      "changes": []
+    },
+    {
+      "job_id": "7e76102c4fbd64050608",
+      "title": "CENTRAL RESEARCH TEAM (PRODUCT LEAD),CENTRAL RESEARCH TEAM (SUPPORT),INVESTMENT OFFICER,INVESTMENT SPECIALIST,PROJECT DEVELOPMENT MANAGER (BUSINESS),PROJECT DEVELOPMENT MANAGER (TECHNOLOGY),REGIONAL HEAD,RELATIONSHIP MANAGER TEAM LEAD,VP WEALTH",
+      "type": "new",
+      "changes": []
+    }
+  ],
+  "sources": [
+    {
+      "source": "upsc",
+      "status": "error",
+      "error": "403 Client Error: Forbidden for url: https://www.upsc.gov.in/recruitment/recruitment-advertisement"
+    },
+    {
+      "source": "ssc",
+      "status": "ok",
+      "jobs": 0
+    },
+    {
+      "source": "ibps",
+      "status": "error",
+      "error": "HTTPSConnectionPool(host='www.ibps.in', port=443): Max retries exceeded with url: /index.php/recruitment/ (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1010)')))"
+    },
+    {
+      "source": "sbi",
+      "status": "ok",
+      "jobs": 8
+    },
+    {
+      "source": "indiapost",
+      "status": "ok",
+      "jobs": 0
+    },
+    {
+      "source": "employment_news",
+      "status": "ok",
+      "jobs": 0
+    }
+  ]
+}
