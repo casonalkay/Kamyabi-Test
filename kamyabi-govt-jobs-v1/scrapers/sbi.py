@@ -1,67 +1,64 @@
 from .base import *
 from pipeline.pdf_extract import pdf_text
-from pipeline.fields import find_vacancies, infer_application_window, find_labeled, infer_quality
+from pipeline.extract import application_window, vacancies, labeled, quality
+from pipeline.classify import is_recruitment
 
-URL = "https://sbi.bank.in/web/careers/current-openings"
-BAD = ("select list", "selected", "interview", "result", "admit card", "answer key", "score card", "shortlist", "wait list", "joining")
+URL="https://sbi.bank.in/web/careers/current-openings"
 
 def scrape(session=None):
-    s, _ = soup(URL, session)
-    jobs = []
-    for container in s.find_all(["tr","li","div"]):
-        links = container.find_all("a", href=True)
-        if not links: continue
-        row_text = clean_text(container.get_text(" ", strip=True))
-        low = row_text.lower()
-        if any(x in low for x in BAD):
-            continue
-        pdf_links = [(clean_text(a.get_text(" ",strip=True)), absolute(URL,a["href"])) for a in links if is_pdf(absolute(URL,a["href"]))]
-        if not pdf_links: continue
+    s,_=soup(URL,session)
+    jobs=[]
+    for row in s.find_all(["tr","li","div"]):
+        text=clean_text(row.get_text(" ",strip=True))
+        links=row.find_all("a",href=True)
+        if not links or not text: continue
+        if not is_recruitment(text): continue
 
-        title = clean_text(links[0].get_text(" ", strip=True)) or row_text[:250]
-        if not any(k in (title+" "+row_text).lower() for k in ("recruit", "officer", "associate", "probation", "cadre", "apprentice", "manager", "specialist")):
-            continue
+        pdfs=[(clean_text(a.get_text(" ",strip=True)),absolute(URL,a["href"]))
+              for a in links if is_pdf(absolute(URL,a["href"]))]
+        if not pdfs: continue
 
-        for link_title, href in pdf_links[:3]:
-            if any(x in (link_title+" "+href).lower() for x in BAD):
-                continue
-            pdf = ""
-            try: pdf = pdf_text(href, session)
+        # Use the row heading/first substantial text as title.
+        title=clean_text(links[0].get_text(" ",strip=True)) or text[:300]
+        if len(title)<5: title=text[:300]
+
+        # Parse the page text first — SBI exposes the application window in HTML.
+        start,end=application_window(text)
+        app_url=None
+        for a in links:
+            tt=clean_text(a.get_text(" ",strip=True)).lower()
+            if "apply online" in tt or tt=="apply" or "registration" in tt:
+                app_url=absolute(URL,a["href"]); break
+
+        for _,pdf_url in pdfs[:2]:
+            pdf=""
+            try: pdf=pdf_text(pdf_url,session)
             except Exception: pass
-            if any(x in pdf.lower() for x in BAD):
-                continue
-            start, end = infer_application_window(pdf + " " + row_text)
-            vacancies = find_vacancies(pdf)
-            if not (end or vacancies or start):
-                continue
+            if not is_recruitment(title,pdf): continue
 
-            application_url = None
-            for a in links:
-                tt = clean_text(a.get_text(" ",strip=True)).lower()
-                if "apply" in tt or "registration" in tt:
-                    application_url = absolute(URL,a["href"]); break
-
-            d = Job(
-                job_id=make_job_id("sbi", title, href),
+            ps,pe=application_window(pdf)
+            start=start or ps
+            end=end or pe
+            v=vacancies(pdf)
+            d=Job(
+                job_id=make_job_id("sbi",title,pdf_url),
                 organization="State Bank of India",
                 title=title[:300],
                 job_type="Public Sector Banking",
-                vacancies=vacancies,
-                qualification=find_labeled(pdf, ["educational qualification", "eligibility", "qualification"]),
-                age_limit=find_labeled(pdf, ["age limit", "age as on"]),
-                salary=find_labeled(pdf, ["pay scale", "salary", "emoluments", "remuneration"]),
+                vacancies=v,
+                qualification=labeled(pdf,["educational qualification","essential qualification","qualification"]),
+                age_limit=labeled(pdf,["age limit","age as on"]),
+                salary=labeled(pdf,["salary","emoluments","pay scale","remuneration"]),
                 application_start=start,
                 application_end=end,
                 official_url=URL,
-                notification_url=href,
-                application_url=application_url,
+                notification_url=pdf_url,
+                application_url=app_url,
                 source="SBI",
                 record_type="recruitment",
                 status=infer_status(end),
-                content_hash=sha256_text(title, pdf[:150000], href)
+                content_hash=sha256_text(title,pdf[:180000],text)
             ).to_dict()
-            q, missing = infer_quality(d)
-            d["data_quality_score"], d["missing_fields"] = q, missing
+            q,missing=quality(d); d["data_quality_score"]=q; d["missing_fields"]=missing
             jobs.append(d)
-    # Deduplicate
-    return list({j["job_id"]: j for j in jobs}.values())
+    return list({j["job_id"]:j for j in jobs}.values())

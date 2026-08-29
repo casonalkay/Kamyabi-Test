@@ -1,108 +1,73 @@
-import json
-import logging
+import json, logging
 from pathlib import Path
 from datetime import datetime
 import requests
 
 from pipeline.store import load_json, write_json, merge_jobs
-from pipeline.change_detector import content_hash
 from scrapers import upsc, ssc, ibps, sbi, indiapost, employment_news
-from scrapers.base import is_publishable
 
-ROOT = Path(__file__).resolve().parent
-DATA = ROOT / "data"
-LOGS = ROOT / "logs"
+ROOT=Path(__file__).resolve().parent
+DATA=ROOT/"data"; LOGS=ROOT/"logs"
 
-SCRAPERS = {
-    "upsc": upsc.scrape,
-    "ssc": ssc.scrape,
-    "ibps": ibps.scrape,
-    "sbi": sbi.scrape,
-    "indiapost": indiapost.scrape,
-    "employment_news": employment_news.scrape,
+SCRAPERS={
+    "upsc":upsc.scrape,
+    "ssc":ssc.scrape,
+    "ibps":ibps.scrape,
+    "sbi":sbi.scrape,
+    "indiapost":indiapost.scrape,
+    "employment_news":employment_news.scrape
 }
-
 
 def setup_logging():
     LOGS.mkdir(exist_ok=True)
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(message)s",
-        handlers=[logging.FileHandler(LOGS / "scraper.log", encoding="utf-8"), logging.StreamHandler()],
-    )
-
+    logging.basicConfig(level=logging.INFO,format="%(asctime)s %(levelname)s %(message)s",
+                        handlers=[logging.FileHandler(LOGS/"scraper.log",encoding="utf-8"),logging.StreamHandler()])
 
 def run():
     setup_logging()
-    now = datetime.now().astimezone().isoformat(timespec="seconds")
-    session = requests.Session()
-    config = load_json(ROOT / "config/sources.json", {"sources": []})
-    enabled = [x["id"] for x in config["sources"] if x.get("enabled")]
-    current_path = DATA / "current/jobs.json"
-    existing = load_json(current_path, [])
-    all_scraped = []
-    review = []
-    source_stats = []
+    now=datetime.now().astimezone().isoformat(timespec="seconds")
+    session=requests.Session()
+    session.headers.update({"User-Agent":"KamyabiGovtJobsBot/1.4 (+https://kamyabi.in)"})
+    cfg=load_json(ROOT/"config/sources.json",{"sources":[]})
+    enabled=[x["id"] for x in cfg["sources"] if x.get("enabled")]
+    existing=load_json(DATA/"current/jobs.json",[])
+    scraped=[]; stats=[]
 
-    for source_id in enabled:
-        fn = SCRAPERS.get(source_id)
-        if not fn:
-            continue
+    for sid in enabled:
+        fn=SCRAPERS.get(sid)
+        if not fn: continue
         try:
-            jobs = fn(session)
-            valid = []
-            rejected = 0
-            for j in jobs:
-                if j.get("record_type") not in ("vacancy", "recruitment"):
-                    rejected += 1
-                    review.append({"source": source_id, "job": j, "reason": "invalid_record_type"})
-                    continue
-                ok, reason = is_publishable(j)
-                if not ok:
-                    rejected += 1
-                    review.append({"source": source_id, "job": j, "reason": reason})
-                    continue
-                j["content_hash"] = content_hash(j)
-                valid.append(j)
-            all_scraped.extend(valid)
-            source_stats.append({"source": source_id, "status": "ok", "jobs": len(valid), "rejected": rejected})
-            logging.info("%s: %d valid jobs (%d rejected)", source_id, len(valid), rejected)
+            jobs=fn(session)
+            scraped.extend(jobs)
+            if jobs:
+                status="ok"
+            else:
+                status="no_data"
+            stats.append({"source":sid,"status":status,"jobs":len(jobs),"rejected":0})
+            logging.info("%s: %s (%d)",sid,status,len(jobs))
         except Exception as e:
-            logging.exception("%s failed", source_id)
-            source_stats.append({"source": source_id, "status": "error", "jobs": 0, "error": str(e)})
+            stats.append({"source":sid,"status":"error","jobs":0,"error":str(e)})
+            logging.exception("%s failed",sid)
 
-    merged, changes, review = merge_jobs(existing, all_scraped, now)
-    merged.sort(key=lambda x: (
-        x.get("status") != "open",
-        x.get("application_end") or "9999-12-31",
-        x.get("organization") or "",
-        x.get("title") or ""
-    ))
+    merged,changes,review,published=merge_jobs(existing,scraped,now)
 
-    write_json(current_path, merged)
-    write_json(DATA / "history" / f"{now[:10]}.json", merged)
-    write_json(DATA / "review" / f"{now[:10]}.json", review)
-    write_json(DATA / "review" / f"{now[:10]}.json", review)
-    write_json(DATA / "last_run.json", {
-        "run_at": now,
-        "total_jobs_scraped": len(all_scraped),
-        "total_jobs_current": len(merged),
-        "review_records": len(review),
-        "changes": changes,
-        "sources": source_stats,
-        "review_records": len(review),
-        "website_integration": False,
-        "data_policy": "Only vacancy/recruitment records are stored; missing fields remain null."
+    merged.sort(key=lambda x:(x.get("status")!="open",x.get("application_end") or "9999-12-31",x.get("organization") or "",x.get("title") or ""))
+
+    write_json(DATA/"current/jobs.json",merged)
+    write_json(DATA/"history"/f"{now[:10]}.json",merged)
+    write_json(DATA/"review"/f"{now[:10]}.json",review)
+    write_json(DATA/"last_run.json",{
+        "run_at":now,
+        "total_jobs_scraped":len(scraped),
+        "total_jobs_published_this_run":len(published),
+        "total_jobs_current":len(merged),
+        "review_records":len(review),
+        "changes":changes,
+        "sources":stats,
+        "website_integration":False,
+        "data_policy":"Only validated vacancy/recruitment records with a direct notification URL are published; uncertain records go to review; missing fields remain null."
     })
+    print(json.dumps({"run_at":now,"scraped":len(scraped),"published":len(published),"current":len(merged),"review":len(review),"sources":stats},indent=2))
 
-    print(json.dumps({
-        "run_at": now,
-        "scraped": len(all_scraped),
-        "current": len(merged),
-        "changes": len(changes),
-        "sources": source_stats
-    }, indent=2))
-
-
-if __name__ == "__main__":
+if __name__=="__main__":
     run()

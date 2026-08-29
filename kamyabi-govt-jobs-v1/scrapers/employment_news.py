@@ -1,41 +1,37 @@
 from .base import *
-from pipeline.normalize import parse_date
-from pipeline.fields import infer_quality
+from pipeline.extract import application_window, quality, first_date_in
 
-URL = "https://employmentnews.gov.in/NewEmp/AllJobs.aspx?k=All"
+URL="https://employmentnews.gov.in/NewEmp/AllJobs.aspx?k=All"
 
 def scrape(session=None):
-    s, _ = soup(URL, session)
-    jobs = []
+    s,_=soup(URL,session)
+    jobs=[]
     for row in s.select("tr"):
-        cells = [clean_text(x.get_text(" ", strip=True)) for x in row.find_all(["td","th"])]
-        links = row.find_all("a", href=True)
-        if len(cells) < 4 or not links: continue
-        title = cells[2]
-        if not title or title.lower() in ("post","title"):
-            continue
-        # Prefer a direct item/notification link. If the table only points to the listing,
-        # don't publish the record.
-        hrefs = [absolute(URL,a["href"]) for a in links]
-        direct = next((h for h in hrefs if h != URL and not h.lower().endswith("alljobs.aspx?k=all")), None)
+        cells=[clean_text(x.get_text(" ",strip=True)) for x in row.find_all(["td","th"])]
+        links=row.find_all("a",href=True)
+        if len(cells)<4 or not links: continue
+        title=cells[2]
+        if not title or title.lower() in ("post","title"): continue
+        hrefs=[absolute(URL,a["href"]) for a in links]
+        direct=next((h for h in hrefs if h!=URL and "alljobs.aspx?k=all" not in h.lower()),None)
         if not direct: continue
-        pub = parse_date(cells[0])
-        end = parse_date(cells[-1])
-        d = Job(
-            job_id=make_job_id("employment_news", title, direct),
+        # Employment News is a discovery layer; notification target must be direct.
+        d=Job(
+            job_id=make_job_id("employment_news",title,direct),
             organization=cells[1][:200],
             title=title[:300],
             job_type="Government / PSU",
-            application_end=end,
-            published_date=pub,
+            application_end=first_date_in(cells[-1]),
+            published_date=None,
             official_url=URL,
             notification_url=direct,
             source="Employment News",
             record_type="recruitment",
-            status=infer_status(end),
-            content_hash=sha256_text(title, cells, direct)
+            status="unknown",
+            content_hash=sha256_text(title,cells,direct)
         ).to_dict()
-        q, missing = infer_quality(d)
-        d["data_quality_score"], d["missing_fields"] = q, missing
-        jobs.append(d)
+        q,missing=quality(d); d["data_quality_score"]=q; d["missing_fields"]=missing
+        # Do not publish unless there is at least a direct notification and an identifiable closing date.
+        if d["notification_url"]:
+            jobs.append(d)
     return jobs

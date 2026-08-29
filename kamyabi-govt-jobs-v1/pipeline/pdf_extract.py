@@ -3,7 +3,7 @@ from pypdf import PdfReader
 from scrapers.base import get, clean_text
 
 def pdf_text(url, session=None):
-    r = get(url, session)
+    r = get(url, session, timeout=45)
     reader = PdfReader(BytesIO(r.content))
     pages = []
     for page in reader.pages:

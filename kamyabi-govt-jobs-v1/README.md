@@ -1,66 +1,35 @@
-# Kamyabi Government Jobs Scraper — V1.1 TEST ONLY
+# Kamyabi Government Jobs Scraper — V1.4 TEST
 
-This repository is a **test-only** data collector for Kamyabi. It does **not** connect to, modify, deploy to, or call `kamyabi.in`.
+TEST-ONLY repository. It does not connect to, modify, deploy to, or send data to Kamyabi.in.
 
-## What changed in V1.1
+## V1.4 design
 
-- Added `record_type` validation so results, selection lists, interview schedules, admit cards and similar notices are not treated as vacancies.
-- SBI scraper now starts from actual **DOWNLOAD ADVERTISEMENT** records and requires recruitment/apply context instead of scraping every PDF on the page.
-- Added application-date extraction from SBI's recruitment block and notification PDF.
-- Added vacancy/qualification/age/salary extraction where the PDF text supports it.
-- SSC, India Post, IBPS and Employment News parsers were tightened around recruitment records.
-- IBPS has a narrowly scoped certificate-chain fallback; it does not disable TLS globally.
-- UPSC has an alternate official vacancy-circular endpoint if the recruitment-advertisement page blocks the runner.
-- Legacy V1 records without a valid `record_type` are removed from the current dataset on the next run.
-- Added QA and tests to the GitHub Action before scraping.
+Official portal -> source-specific discovery -> PDF/HTML extraction -> validation -> quality gate -> current dataset or review queue.
 
-## Current sources
+Publishable data:
+- `data/current/jobs.json`
 
-- UPSC
-- SSC
-- IBPS
-- SBI Careers
-- India Post
-- Employment News
+Uncertain records:
+- `data/review/YYYY-MM-DD.json`
 
-## Data policy
+Daily snapshots:
+- `data/history/YYYY-MM-DD.json`
 
-Only `vacancy` and `recruitment` records enter `data/current/jobs.json`.
-Missing values are kept as `null`; the scraper does not invent vacancy counts, qualifications, dates or salary information.
-The official government notification remains the source of truth.
+Run locally:
+```bash
+pip install -r requirements.txt
+pytest -q
+python main.py
+python qa.py
+```
 
-## Output
+GitHub Actions runs tests before scraping and commits only repository data. No production credentials are required.
 
-- `data/current/jobs.json` — current normalized vacancy dataset
-- `data/history/YYYY-MM-DD.json` — daily snapshot
-- `data/last_run.json` — source health, counts and detected changes
-- `logs/scraper.log` — execution log
+## V1.4 rules
 
-## GitHub Actions
-
-The workflow runs daily at 05:30 IST and can be manually triggered from Actions. Because the repository is currently nested under `kamyabi-govt-jobs-v1/`, the workflow explicitly runs Python from that directory.
-
-Before any future website integration, inspect the actual records and source-level QA results for several runs.
-
-
-## V1.2 data-safety gates
-
-A scraped item is not allowed into `data/current/jobs.json` unless it has:
-- a specific non-generic title,
-- a direct notification target different from the source landing page,
-- at least one application date,
-- a known open/closed status,
-- a `vacancy` or `recruitment` record type.
-
-Rejected items are written to `data/review/YYYY-MM-DD.json` for inspection rather than being published.
-
-
-## V1.3 quality-first changes
-
-- Source-specific discovery for IBPS and SBI.
-- Rejects result/selection/interview/admit-card documents.
-- Requires a direct notification URL before publishing.
-- Weak records are written to `data/review/YYYY-MM-DD.json` rather than `data/current/jobs.json`.
-- Adds vacancy/eligibility/age/salary/date extraction attempts from notification PDFs.
-- Runs automated tests before scraping in GitHub Actions.
-- Still test-only: no Kamyabi.in integration.
+- Never fabricate missing values.
+- Never publish result/selection/interview/admit-card documents as vacancies.
+- Require a direct notification URL.
+- Use exact date-token extraction instead of fuzzy parsing of entire sentences.
+- Distinguish `ok`, `no_data`, and `error` in source health.
+- Keep the website integration flag false.
