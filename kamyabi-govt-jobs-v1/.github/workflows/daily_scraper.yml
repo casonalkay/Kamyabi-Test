@@ -1,1 +1,40 @@
+name: Kamyabi Daily Government Jobs
 
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run scraper
+        run: python main.py
+
+      - name: Commit data
+        run: |
+          git config user.name "kamyabi-bot"
+          git config user.email "kamyabi-bot@users.noreply.github.com"
+          git add data/ logs/
+          git diff --cached --quiet || git commit -m "data: daily government jobs update"
+          git push
