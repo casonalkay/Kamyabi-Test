@@ -31,6 +31,8 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run unit tests
+        env:
+          PYTHONPATH: .
         run: pytest -q
 
       - name: Run scraper
