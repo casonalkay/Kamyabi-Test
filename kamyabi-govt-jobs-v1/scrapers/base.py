@@ -90,8 +90,8 @@ def is_publishable(job):
     if job.get("record_type") not in ("vacancy","recruitment"): return False,"non_vacancy"
     title=clean_text(job.get("title","")).lower()
     if title in {"recruitment exams","recruitment","careers","current openings"}: return False,"generic_title"
-    n=clean_text(job.get("notification_url","")).rstrip("/")
-    if not n: return False,"missing_notification"
-    o=clean_text(job.get("official_url","")).rstrip("/")
-    if o and n==o: return False,"missing_direct_notification"
+    notification_url=clean_text(job.get("notification_url","")).rstrip("/")
+    if not notification_url: return False,"missing_notification"
+    official_url=clean_text(job.get("official_url","")).rstrip("/")
+    if official_url and notification_url==official_url: return False,"missing_direct_notification"
     return True,None

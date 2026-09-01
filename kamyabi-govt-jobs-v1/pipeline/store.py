@@ -17,12 +17,12 @@ def merge_jobs(existing,candidates,now,min_publication_score=78):
     review=[];published=[];changes=[]
     for j in candidates:
         end=j.get("application_end")
-        open_now=True
+        open_now=not end
         if end:
             try: open_now=date.fromisoformat(end)>=date.today()
-            except: pass
+            except: open_now=False
         score=j.get("publication_score",j.get("data_quality_score",0))
-        discovery=j.get("discovery_score",score)
+        discovery=j.get("discovery_score",j.get("data_quality_score",0))
         eligible=(
             j.get("notification_url") and
             j.get("title") and
