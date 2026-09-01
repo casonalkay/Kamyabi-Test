@@ -126,5 +126,4 @@ def missing_fields(job):
                         "application_end","application_url","published_date","location"]
             if not job.get(k)]
 
-def quality(job):
-    return infer_quality(job)
+quality = infer_quality

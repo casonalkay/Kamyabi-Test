@@ -3,6 +3,7 @@ from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
 import hashlib, re, requests
 from urllib.parse import urljoin
+from pipeline.classify import is_current
 
 @dataclass
 class Job:
@@ -86,9 +87,6 @@ def infer_status(end_date):
     except Exception:
         return "unknown"
 
-def is_current(end_date):
-    return infer_status(end_date) == "open"
-
 def is_publishable(job, min_quality_score=78):
     title = clean_text(job.get("title"))
     record_type = job.get("record_type")
@@ -106,8 +104,13 @@ def is_publishable(job, min_quality_score=78):
     if not notification_url or (official_url and notification_url == official_url):
         return False, "missing_direct_notification"
 
-    if infer_status(job.get("application_end")) == "closed":
+    end_date = job.get("application_end")
+    if end_date and not is_current(end_date):
         return False, "closed"
+
+    discovery_score = job.get("discovery_score")
+    if discovery_score is not None and discovery_score < 70:
+        return False, "low_discovery"
 
     score = job.get("publication_score")
     if score is None:
