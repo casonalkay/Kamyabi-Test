@@ -1,6 +1,7 @@
 from pathlib import Path
 import json
 from datetime import date
+from pipeline.extract import discovery_score, publication_score, missing_fields
 
 def load_json(path,default):
     p=Path(path)
@@ -12,12 +13,24 @@ def write_json(path,data):
     p=Path(path);p.parent.mkdir(parents=True,exist_ok=True)
     p.write_text(json.dumps(data,ensure_ascii=False,indent=2),encoding="utf-8")
 
+def normalize_candidate(job):
+    if job.get("discovery_score") is None:
+        base_score = job.get("data_quality_score")
+        job["discovery_score"] = int(base_score) if base_score is not None else discovery_score(job)
+    if job.get("publication_score") is None:
+        base_score = job.get("data_quality_score")
+        job["publication_score"] = int(base_score) if base_score is not None else publication_score(job)
+    if job.get("missing_fields") is None:
+        job["missing_fields"] = missing_fields(job)
+    return job
+
 def merge_jobs(existing,candidates,now,min_publication_score=78):
     by_id={j["job_id"]:j for j in existing}
     review=[];published=[];changes=[]
     for j in candidates:
+        j=normalize_candidate(j)
         end=j.get("application_end")
-        open_now=False
+        open_now=not end
         if end:
             try: open_now=date.fromisoformat(end)>=date.today()
             except: pass
@@ -25,7 +38,6 @@ def merge_jobs(existing,candidates,now,min_publication_score=78):
             j.get("notification_url") and
             j.get("title") and
             j.get("record_type") in ("vacancy","recruitment") and
-            j.get("discovery_score",0)>=70 and
             j.get("publication_score",0)>=min_publication_score and
             open_now
         )
@@ -43,6 +55,8 @@ def merge_jobs(existing,candidates,now,min_publication_score=78):
 
     current=[]
     for j in by_id.values():
+        if j.get("record_type") not in ("vacancy","recruitment"):
+            continue
         end=j.get("application_end")
         if end:
             try:
