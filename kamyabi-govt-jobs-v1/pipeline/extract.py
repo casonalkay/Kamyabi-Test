@@ -1,4 +1,5 @@
 import re
+from datetime import date
 from dateutil import parser as dtparser
 
 MONTHS = r"(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)"
@@ -93,7 +94,7 @@ def clean_title(s):
     s=re.sub(r"\s*\((?:apply online|last date to apply).*?\)", "", s, flags=re.I)
     s=re.split(r"\b(?:download advertisement|apply online|apply now|biodata|undertaking format)\b", s, flags=re.I)[0]
     s=re.sub(r"\s*(?:new)\s*$","",s,flags=re.I)
-    return s.strip(" -:|()")
+    return s.strip(" -:|")
 
 def title_from_pdf(text, fallback=None):
     if not text: return clean_title(fallback)
@@ -124,3 +125,19 @@ def missing_fields(job):
     return [k for k in ["vacancies","qualification","age_limit","salary","application_start",
                         "application_end","application_url","published_date","location"]
             if not job.get(k)]
+
+def is_current(end_date):
+    if not end_date:
+        return False
+    try:
+        return date.fromisoformat(end_date) >= date.today()
+    except Exception:
+        return False
+
+def quality(job):
+    score = job.get("data_quality_score")
+    if score is None:
+        score = job.get("publication_score")
+    if score is None:
+        score = publication_score(job)
+    return int(score), missing_fields(job)

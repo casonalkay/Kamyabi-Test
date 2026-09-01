@@ -23,3 +23,6 @@ def current_open(end_date):
     if not end_date:return False
     try:return date.fromisoformat(end_date)>=date.today()
     except:return False
+
+def is_current(end_date):
+    return current_open(end_date)
