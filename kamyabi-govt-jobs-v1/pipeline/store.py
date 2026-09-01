@@ -13,20 +13,22 @@ def write_json(path,data):
     p.write_text(json.dumps(data,ensure_ascii=False,indent=2),encoding="utf-8")
 
 def merge_jobs(existing,candidates,now,min_publication_score=78):
-    by_id={j["job_id"]:j for j in existing}
+    by_id={j["job_id"]:j for j in existing if j.get("record_type") in ("vacancy","recruitment")}
     review=[];published=[];changes=[]
     for j in candidates:
         end=j.get("application_end")
-        open_now=False
+        open_now=True
         if end:
             try: open_now=date.fromisoformat(end)>=date.today()
             except: pass
+        score=j.get("publication_score",j.get("data_quality_score",0))
+        discovery=j.get("discovery_score",score)
         eligible=(
             j.get("notification_url") and
             j.get("title") and
             j.get("record_type") in ("vacancy","recruitment") and
-            j.get("discovery_score",0)>=70 and
-            j.get("publication_score",0)>=min_publication_score and
+            discovery>=70 and
+            score>=min_publication_score and
             open_now
         )
         if not eligible:
