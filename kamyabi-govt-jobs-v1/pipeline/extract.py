@@ -93,7 +93,10 @@ def clean_title(s):
     s=re.sub(r"\s*\((?:apply online|last date to apply).*?\)", "", s, flags=re.I)
     s=re.split(r"\b(?:download advertisement|apply online|apply now|biodata|undertaking format)\b", s, flags=re.I)[0]
     s=re.sub(r"\s*(?:new)\s*$","",s,flags=re.I)
-    return s.strip(" -:|()")
+    s=s.strip(" -:|")
+    if s.count("(")<s.count(")") and s.endswith(")"): s=s[:-1].rstrip()
+    if s.count("(")>s.count(")") and s.startswith("("): s=s[1:].lstrip()
+    return s
 
 def title_from_pdf(text, fallback=None):
     if not text: return clean_title(fallback)
@@ -124,3 +127,6 @@ def missing_fields(job):
     return [k for k in ["vacancies","qualification","age_limit","salary","application_start",
                         "application_end","application_url","published_date","location"]
             if not job.get(k)]
+
+def quality(job):
+    return publication_score(job), missing_fields(job)
