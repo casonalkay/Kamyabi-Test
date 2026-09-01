@@ -85,3 +85,18 @@ def infer_status(end_date):
         return "open" if date.fromisoformat(end_date) >= date.today() else "closed"
     except Exception:
         return "unknown"
+
+_GENERIC_TITLES = re.compile(
+    r"^(recruitment exams?|results?|admit card|answer key|syllabus|cut.?off|notification)$",
+    re.I,
+)
+
+def is_publishable(job):
+    title = clean_text(job.get("title") or "")
+    if _GENERIC_TITLES.match(title):
+        return False, "generic_title"
+    notification_url = job.get("notification_url") or ""
+    official_url = job.get("official_url") or ""
+    if not notification_url or notification_url == official_url:
+        return False, "missing_direct_notification"
+    return True, None
