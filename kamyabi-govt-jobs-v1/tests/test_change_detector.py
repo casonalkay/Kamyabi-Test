@@ -20,7 +20,7 @@ def test_legacy_non_vacancy_records_are_removed():
         {"job_id": "old", "title": "LIST OF CANDIDATES PROVISIONALLY SELECTED", "record_type": "other"},
         {"job_id": "good", "title": "Recruitment", "record_type": "recruitment"},
     ]
-    merged, _ = merge_jobs(existing, [], "2026-08-29T00:00:00+00:00")
+    merged, _, _, _ = merge_jobs(existing, [], "2026-08-29T00:00:00+00:00")
     assert [x["job_id"] for x in merged] == ["good"]
 
 
