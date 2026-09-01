@@ -85,3 +85,25 @@ def infer_status(end_date):
         return "open" if date.fromisoformat(end_date) >= date.today() else "closed"
     except Exception:
         return "unknown"
+
+def is_publishable(job):
+    title = clean_text(job.get("title") or "").lower()
+    record_type = (job.get("record_type") or "").lower()
+    notification_url = (job.get("notification_url") or "").strip()
+    official_url = (job.get("official_url") or "").strip()
+    generic_titles = {
+        "recruitment exams",
+        "recruitment exam",
+        "recruitment",
+        "vacancies",
+        "vacancy",
+    }
+    if record_type not in {"vacancy", "recruitment"}:
+        return False, "record_type"
+    if title in generic_titles:
+        return False, "generic_title"
+    if not notification_url:
+        return False, "missing_notification"
+    if official_url and notification_url.rstrip("/") == official_url.rstrip("/"):
+        return False, "missing_direct_notification"
+    return True, "ok"
