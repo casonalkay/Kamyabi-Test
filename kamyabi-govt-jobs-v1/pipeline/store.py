@@ -43,6 +43,8 @@ def merge_jobs(existing,candidates,now,min_publication_score=78):
 
     current=[]
     for j in by_id.values():
+        if j.get("record_type") not in ("vacancy","recruitment"):
+            continue
         end=j.get("application_end")
         if end:
             try:
