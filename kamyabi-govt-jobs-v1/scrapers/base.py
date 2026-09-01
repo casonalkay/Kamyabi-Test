@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass, asdict
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 import hashlib, re, requests
 from urllib.parse import urljoin
 
@@ -79,9 +79,41 @@ def make_job_id(source, title, advertisement=None):
     return hashlib.sha1(raw.encode()).hexdigest()[:20]
 
 def infer_status(end_date):
-    from datetime import date
     if not end_date: return "unknown"
     try:
         return "open" if date.fromisoformat(end_date) >= date.today() else "closed"
     except Exception:
         return "unknown"
+
+def is_current(end_date):
+    return infer_status(end_date) == "open"
+
+def is_publishable(job, min_discovery_score=70, min_publication_score=78):
+    from pipeline.classify import is_recruitment
+    from pipeline.extract import discovery_score, publication_score
+
+    title = clean_text(job.get("title"))
+    if not title:
+        return False, "missing_title"
+    if job.get("record_type") not in ("vacancy", "recruitment"):
+        return False, "invalid_record_type"
+    if not is_recruitment(title):
+        return False, "generic_title"
+
+    notification_url = job.get("notification_url")
+    official_url = job.get("official_url")
+    if not notification_url or (official_url and notification_url == official_url):
+        return False, "missing_direct_notification"
+
+    end_date = job.get("application_end")
+    if not end_date:
+        return False, "missing_application_end"
+    if infer_status(end_date) != "open":
+        return False, "closed"
+
+    if job.get("discovery_score", discovery_score(job)) < min_discovery_score:
+        return False, "low_discovery_score"
+    if job.get("publication_score", publication_score(job)) < min_publication_score:
+        return False, "low_publication_score"
+
+    return True, "ok"
