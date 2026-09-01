@@ -1,6 +1,7 @@
 from pathlib import Path
 import json
 from datetime import date
+from scrapers.base import is_publishable
 
 def load_json(path,default):
     p=Path(path)
@@ -16,19 +17,7 @@ def merge_jobs(existing,candidates,now,min_publication_score=78):
     by_id={j["job_id"]:j for j in existing}
     review=[];published=[];changes=[]
     for j in candidates:
-        end=j.get("application_end")
-        open_now=False
-        if end:
-            try: open_now=date.fromisoformat(end)>=date.today()
-            except: pass
-        eligible=(
-            j.get("notification_url") and
-            j.get("title") and
-            j.get("record_type") in ("vacancy","recruitment") and
-            j.get("discovery_score",0)>=70 and
-            j.get("publication_score",0)>=min_publication_score and
-            open_now
-        )
+        eligible,_=is_publishable(j,min_publication_score)
         if not eligible:
             review.append(j); continue
         old=by_id.get(j["job_id"])
@@ -43,6 +32,8 @@ def merge_jobs(existing,candidates,now,min_publication_score=78):
 
     current=[]
     for j in by_id.values():
+        if j.get("record_type") not in ("vacancy","recruitment"):
+            continue
         end=j.get("application_end")
         if end:
             try:
